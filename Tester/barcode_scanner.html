@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Barcode Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        #video {
+            border: 2px solid #333;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        #result {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            padding: 10px 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Barcode Scanner</h1>
+    <video id="video" width="400" height="300"></video>
+    <p id="result">Scan something...</p>
+    
+    <script type="module">
+        import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@latest/+esm';
+        
+        const codeReader = new BrowserMultiFormatReader();
+        const videoElement = document.getElementById('video');
+        const resultElement = document.getElementById('result');
+        
+        async function startScanner() {
+            try {
+                const devices = await codeReader.listVideoInputDevices();
+                if (devices.length === 0) {
+                    alert("No camera found");
+                    return;
+                }
+                
+                const selectedDeviceId = devices[0].deviceId;
+                codeReader.decodeFromVideoDevice(selectedDeviceId, videoElement, (result, err) => {
+                    if (result) {
+                        console.log(result.getText());
+                        resultElement.textContent = result.getText();
+                    }
+                });
+            } catch (error) {
+                console.error('Error starting scanner:', error);
+                resultElement.textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        startScanner();
+    </script>
+</body>
+</html>

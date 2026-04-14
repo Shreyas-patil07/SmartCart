@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+
+# Build outputs
+frontend/dist/
+frontend/build/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Firebase
+firebase-service-account.json
+*-service-account.json
+
+# Python virtual environment
+venv/
+env/
+ENV/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Barcode test outputs
+Tester/test_output/
+Tester/barcodes_improved/
+Tester/captured_frame_*.png
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Zip files
+*.zip
+Backend.zip
+Frontend.zip
+
+# Cache
+.cache/
+frontend/.vite/
+frontend/node_modules/.vite/
