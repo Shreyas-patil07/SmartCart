@@ -67,6 +67,8 @@ A progressive web application built for speed and mobile-first usage.
 - **React Router 6**: Client-side routing with protected route support
 - **Firebase SDK 12**: Client-side authentication and Firestore integration
 - **Axios**: HTTP client for API communication with interceptors
+- **html5-qrcode**: Real-time barcode scanning from camera and images
+- **Quagga**: Alternative barcode scanning library (installed but not actively used)
 
 **Architecture Patterns**:
 - **Context API**: Global state management for authentication and cart
@@ -79,28 +81,40 @@ A progressive web application built for speed and mobile-first usage.
 - `CartContext`: Handles cart state with reducer pattern for predictable updates
 - `ProtectedRoute`: Guards routes requiring authentication
 - `SessionTimerBadge`: Visual countdown for shopping session expiration
+- `Scanner`: Real-time barcode detection using Html5Qrcode with camera and image upload support
+
+**Barcode Scanning**:
+- **Live Camera Scanning**: Html5Qrcode continuously scans Code128 barcodes from camera feed
+- **Image Upload**: Supports both camera capture and gallery upload for barcode scanning
+- **Format Support**: CODE_128 (primary format for SMC barcodes)
+- **Duplicate Prevention**: 2-second cooldown between scans
+- **Normalization**: Automatic barcode format detection and cleaning
 
 ### Backend (`/backend`)
 
-A lightweight Flask API serving as the source of truth for products, carts, and orders.
+A Django REST Framework API serving as the source of truth for products, carts, and orders.
 
 **Core Technologies**:
-- **Flask**: Micro web framework for Python
-- **Flask-CORS**: Cross-origin resource sharing for frontend communication
+- **Django 4.2+**: Full-featured web framework for Python
+- **Django REST Framework**: Powerful toolkit for building Web APIs
+- **django-cors-headers**: Cross-origin resource sharing for frontend communication
 - **Firebase Admin SDK**: Server-side token verification and user management
 - **Python-dotenv**: Environment variable management
+- **SQLite**: Default database (production should use PostgreSQL/Firestore)
 
 **Architecture Patterns**:
-- **Decorator-Based Auth**: `@verify_token` decorator for endpoint protection
-- **In-Memory Storage**: Dictionary-based session and order storage (production-ready for Firestore migration)
+- **Authentication Class**: `FirebaseAuthentication` class for DRF endpoint protection
+- **In-Memory Storage**: Dictionary-based session and order storage (temporary, should migrate to database models)
 - **RESTful Design**: Standard HTTP methods and status codes
 - **Stateless Sessions**: Session data stored server-side, identified by session ID
 
 **Security Model**:
-- All protected endpoints verify Firebase ID tokens
+- All protected endpoints verify Firebase ID tokens via DRF authentication
 - Server-side price calculation prevents client manipulation
 - CORS configured for specific frontend origins only
 - QR codes use cryptographically random identifiers
+
+**Note**: The backend was originally Flask but has been migrated to Django. The Flask version is preserved as `app_flask_backup.py`.
 
 ## 💻 Tech Stack
 
@@ -113,20 +127,24 @@ A lightweight Flask API serving as the source of truth for products, carts, and 
 | React Router | 6.30.1 | Client-side routing |
 | Firebase | 12.11.0 | Authentication and Firestore |
 | Axios | 1.12.2 | HTTP client for API calls |
+| html5-qrcode | 2.3.8 | Real-time barcode scanning |
+| Quagga | 0.12.1 | Alternative barcode library |
 | ESLint | 9.36.0 | Code linting and quality |
 
 ### Backend
-| Technology | Purpose |
-|------------|---------|
-| Flask | Web framework |
-| Flask-CORS | Cross-origin resource sharing |
-| Firebase Admin | Server-side token verification |
-| Python-dotenv | Environment configuration |
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Django | 4.2+ | Web framework |
+| Django REST Framework | 3.14.0+ | API toolkit |
+| django-cors-headers | 4.3.0+ | Cross-origin resource sharing |
+| Firebase Admin | 6.0.0+ | Server-side token verification |
+| Python-dotenv | 1.0.0+ | Environment configuration |
 
 ### Development Tools
 - **Node.js**: Required for frontend development
-- **Python 3.x**: Required for backend development
+- **Python 3.8+**: Required for backend development
 - **Git**: Version control
+- **@zxing/browser**: Additional barcode scanning library (root level)
 
 ## 📁 Project Structure
 
@@ -208,12 +226,14 @@ User opens app → Firebase login (email/password or Google) → Select store lo
 ```
 Point camera at barcode → Product validated → Add to cart → Repeat
 ```
-- User navigates to Scanner page with live camera feed
-- Camera detects barcode (or simulate scan in demo mode)
+- User navigates to Scanner page with live camera feed powered by Html5Qrcode
+- Camera continuously scans for Code128 barcodes in real-time
+- Alternative: User can take photo or upload image from gallery for barcode detection
 - Frontend calls `POST /scan` to validate product exists
 - Backend returns product details (name, price, image, variant)
 - Frontend calls `PATCH /cart/<session_id>/item` to add item
 - Cart updates in real-time with running total
+- 2-second cooldown prevents duplicate scans
 
 ### 3. Cart Management
 ```
@@ -275,16 +295,22 @@ npm run lint     # Run ESLint on all source files
 
 ### Backend Development
 
-**Running in Debug Mode**:
+**Running in Debug Mode (Django)**:
 ```bash
-python app.py  # Flask debug mode enabled by default
+python manage.py runserver 0.0.0.0:5000
+```
+
+**Running Flask (Legacy)**:
+```bash
+python app_flask_backup.py
 ```
 
 **Development Tips**:
-- Flask auto-reloads on file changes when `debug=True`
-- In-memory storage resets on server restart
-- If `FIREBASE_CREDENTIALS` is not set, token verification is skipped (dev mode)
+- Django auto-reloads on file changes when `DEBUG=True`
+- In-memory storage resets on server restart (sessions_db, orders_db)
+- If `FIREBASE_CREDENTIALS` is not set, token verification may be skipped (dev mode)
 - CORS is configured for `localhost:5173` and `localhost:4173`
+- Use `python manage.py check` to verify configuration
 
 ### Testing with Sample Barcodes
 
@@ -436,7 +462,7 @@ For issues or questions:
 2. Review [QUICKSTART.md](QUICKSTART.md) for setup issues
 3. Check [DEPLOYMENT.md](DEPLOYMENT.md) for production issues
 4. Review Firebase documentation: https://firebase.google.com/docs
-5. Review Flask documentation: https://flask.palletsprojects.com
+5. Review Django documentation: https://docs.djangoproject.com/
 
 ## 📚 Documentation
 
@@ -449,95 +475,6 @@ For issues or questions:
 ---
 
 **Built with ❤️ for the future of retail**
-
-## 🔄 User Flow
-
-SmartCart follows a streamlined scan-and-go shopping model designed for speed and convenience:
-
-### 1. Authentication & Store Entry
-```
-User opens app → Firebase login (email/password or Google) → Select store location → Session created
-```
-- User authenticates via Firebase (handled entirely client-side)
-- Firebase issues a secure ID token stored in memory
-- User selects their store location from available options
-- Frontend calls `POST /session/start` with Firebase token
-- Backend validates token and creates session with unique ID (e.g., `SC-A1B2C3`)
-
-### 2. Shopping & Scanning
-```
-Point camera at barcode → Product validated → Add to cart → Repeat
-```
-- User navigates to Scanner page with live camera feed
-- Camera detects barcode (or simulate scan in demo mode)
-- Frontend calls `POST /scan` to validate product exists
-- Backend returns product details (name, price, image, variant)
-- Frontend calls `PATCH /cart/<session_id>/item` to add item
-- Cart updates in real-time with running total
-
-### 3. Cart Management
-```
-View cart → Adjust quantities → Remove items → See live total
-```
-- User can view full cart with all items and pricing
-- Increase/decrease quantities with `+`/`-` buttons
-- Remove items with close button
-- Cart progress bar shows spending against ₹2000 limit
-- All changes sync to backend via API calls
-
-### 4. Checkout & Payment
-```
-Proceed to checkout → Review locked order → Select payment method → Pay
-```
-- Cart is locked for review (no further edits)
-- Billing breakdown shows subtotal, taxes (5%), and discounts
-- User selects payment method (UPI, Card, Net Banking)
-- Optional coupon code entry
-- Frontend calls `POST /generate-qr` with session ID and payment method
-
-### 5. Payment Processing
-```
-Backend calculates total → Creates order record → Generates QR code → Returns receipt
-```
-- Backend recalculates total from server-side prices (security)
-- Session status transitions to `completed`
-- Order stored in `orders_db` with unique QR code
-- QR code format: `SMARTCART-{12-char-hex}`
-- Frontend receives QR code and displays exit pass
-
-### 6. Exit Verification
-```
-Guard scans QR → Backend validates → Gate opens → Customer exits
-```
-- Customer presents QR code at exit gate
-- Guard device calls `POST /guard/verify` (public endpoint, no auth required)
-- Backend searches `orders_db` for matching QR code
-- Returns validation status, total paid, item count, and timestamp
-- Gate opens if valid, denies if invalid or already used
-
-## 🚀 Getting Started
-
-For detailed installation and setup instructions, see [QUICKSTART.md](QUICKSTART.md).
-
-### Quick Installation
-
-```bash
-# Clone repository
-git clone <repository-url>
-cd SmartCart
-
-# Backend setup
-cd backend
-pip install -r requirements.txt
-python app.py
-
-# Frontend setup (in new terminal)
-cd frontend
-npm install
-npm run dev
-```
-
-**Important**: Configure Firebase credentials and environment variables before running. See [QUICKSTART.md](QUICKSTART.md) for complete setup instructions.
 
 ## 📡 API Documentation
 
