@@ -35,11 +35,14 @@ pip install -r requirements.txt
 # Firebase Console → Project Settings → Service Accounts → Generate new private key
 # Save as firebase-service-account.json in backend/
 
-# Start the Flask server
-python app.py
+# Start the Django server
+python manage.py migrate
+python manage.py runserver 0.0.0.0:5000
 ```
 
 The backend will start at `http://localhost:5000`
+
+**Note**: Run migrations on first setup with `python manage.py migrate`
 
 ### 3. Frontend Setup
 
@@ -68,38 +71,6 @@ The frontend will start at `http://localhost:5173`
 
 Open your browser and navigate to `http://localhost:5173`
 
-## Django Backend (Alternative)
-
-If you prefer Django over Flask:
-
-### 1. Install Dependencies
-```bash
-cd backend
-pip install -r requirements.txt
-```
-
-### 2. Run Migrations
-```bash
-python manage.py migrate
-```
-
-### 3. Start the Server
-
-**Option A - Using manage.py**:
-```bash
-python manage.py runserver 0.0.0.0:5000
-```
-
-**Option B - Using batch file (Windows)**:
-```bash
-start_django.bat
-```
-
-**Option C - Using shell script (Linux/Mac)**:
-```bash
-./start_django.sh
-```
-
 ## First-Time Setup Checklist
 
 - [ ] Firebase project created with Authentication enabled
@@ -118,7 +89,7 @@ start_django.bat
 Create `backend/.env`:
 
 ```env
-# Flask Configuration
+# Django Configuration
 SECRET_KEY=your-random-secret-key-here
 
 # Firebase Admin SDK
@@ -190,9 +161,20 @@ npm run preview  # Preview production build locally
 npm run lint     # Run ESLint on all source files
 ```
 
-### Backend Development (Flask)
+### Backend Development
+
+**Running in Debug Mode**:
 ```bash
-python app.py  # Flask debug mode enabled by default
+python manage.py runserver 0.0.0.0:5000
+```
+
+**Common Django Commands**:
+```bash
+python manage.py check          # Check for issues
+python manage.py makemigrations # Create migrations
+python manage.py migrate        # Apply migrations
+python manage.py createsuperuser # Create admin user
+python manage.py test           # Run tests
 ```
 
 ### Backend Development (Django)
@@ -244,7 +226,7 @@ python manage.py test
 
 ### CORS errors
 - Verify backend `FRONTEND_URL` in `.env` matches your frontend URL
-- Check Flask-CORS configuration in `app.py`
+- Check CORS configuration in `backend/smartcart/settings.py`
 - Clear browser cache and hard refresh
 
 ## Next Steps

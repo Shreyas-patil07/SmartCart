@@ -114,8 +114,6 @@ A Django REST Framework API serving as the source of truth for products, carts, 
 - CORS configured for specific frontend origins only
 - QR codes use cryptographically random identifiers
 
-**Note**: The backend was originally Flask but has been migrated to Django. The Flask version is preserved as `app_flask_backup.py`.
-
 ## 💻 Tech Stack
 
 ### Frontend
@@ -144,7 +142,6 @@ A Django REST Framework API serving as the source of truth for products, carts, 
 - **Node.js**: Required for frontend development
 - **Python 3.8+**: Required for backend development
 - **Git**: Version control
-- **@zxing/browser**: Additional barcode scanning library (root level)
 
 ## 📁 Project Structure
 
@@ -298,11 +295,6 @@ npm run lint     # Run ESLint on all source files
 **Running in Debug Mode (Django)**:
 ```bash
 python manage.py runserver 0.0.0.0:5000
-```
-
-**Running Flask (Legacy)**:
-```bash
-python app_flask_backup.py
 ```
 
 **Development Tips**:
